@@ -1,6 +1,6 @@
 # SpokenScreen
 
-This project allows users to easily add voice acted dialog to their PC gaming experience.
+This project allows users to easily add applications for triggering audio playback with automatically detected on-screen images.
 
 ## What this repository contains
 
