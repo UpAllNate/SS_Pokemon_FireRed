@@ -204,17 +204,6 @@ def pixelScan(colors : DE_ColorSet, pixels : list[tuple[int,int,int]]) -> tuple[
         
     return detectState == EnumDetectState.outer_2, pixel_ColorChange
 
-class DetectableElement:
-
-    # The colors are all tuples of length 3, for RGB
-    def __init__(self) -> None:
-        self.detected = False
-
-    def manage(self) -> None:
-        self.detected = False
-
-textBox_Blue = DetectableElement()
-
 # Takes screenshot, returns success/failure bool and X0, Y0, Width, Height tuple
 def detectTextBox_1(screenshot : Image, colorsV : DE_ColorSet, colorsH : DE_ColorSet) -> tuple[bool, tuple[int,int,int,int]]:
     X0 = 0
@@ -278,7 +267,12 @@ while True:
     screenshotWhole = ImageGrab.grab()
 
     detected, where = detectTextBox_1(screenshotWhole, tbBlue_Check1_V, tbBlue_Check2_H)
+    upperLeft = (where[0], where[1])
+    lowerRight = (where[0] + where[2], where[1] + where[3])
     print(f"Blue: {detected} at {where}", end="; ")
+    if detected:
+        croppedBlue = screenshotWhole.crop((upperLeft[0], upperLeft[1], lowerRight[0], lowerRight[1]))
+        croppedBlue.save("S:\\text\\file.png")
 
     detected, where = detectTextBox_1(screenshotWhole, tbGrey_Check1_V, tbGrey_Check2_H)
     print(f"Grey: {detected} at {where}", end="; ")
