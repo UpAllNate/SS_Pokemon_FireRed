@@ -120,13 +120,13 @@ tbBlue_Check2_H = DE_ColorSet(
 tbGrey_Check1_V = DE_ColorSet(
     O1 =   (104, 112, 120),
     I1 =   (200, 200, 216),
-    F =    (248,248,248),
+    F =    (248, 248, 248),
     I2 =   (200, 200, 216),
     O2 =   (104, 112, 120)
 )
 
 # The same check is used because the horizontal scan colors are the same
-tbGrey_Check2_H = tbBlue_Check1_V
+tbGrey_Check2_H = tbGrey_Check1_V
 
 """Fight"""
 # These colors correspond to the sequence expected for the middle-body of a fight dialogue text box
@@ -199,6 +199,9 @@ def pixelScan(colors : DE_ColorSet, pixels : list[tuple[int,int,int]]) -> tuple[
                 # print(pixel_ColorChange)
                 break
         
+    if detectState == EnumDetectState.outer_2:
+        pixel_ColorChange.append(len(pixels))
+        
     return detectState == EnumDetectState.outer_2, pixel_ColorChange
 
 class DetectableElement:
@@ -213,7 +216,7 @@ class DetectableElement:
 textBox_Blue = DetectableElement()
 
 # Takes screenshot, returns success/failure bool and X0, Y0, Width, Height tuple
-def detectBlue(screenshot : Image) -> tuple[bool, tuple[int,int,int,int]]:
+def detectTextBox_1(screenshot : Image, colorsV : DE_ColorSet, colorsH : DE_ColorSet) -> tuple[bool, tuple[int,int,int,int]]:
     X0 = 0
     Y0 = 0
     X1 = 0
@@ -228,13 +231,13 @@ def detectBlue(screenshot : Image) -> tuple[bool, tuple[int,int,int,int]]:
 
     pixelList = [screenshot.getpixel((column, i)) for i in range(screenshot.size[1])]
     # print(f"Len pixel {len(pixelList)}")
-    success, pixel_ColorChange = pixelScan(tbBlue_Check1_V, pixelList)
+    success, pixel_ColorChange = pixelScan(colorsV, pixelList)
     # print(f"pixelColorChange: {pixel_ColorChange}", end="; ")
     if success:
         Y0 = pixel_ColorChange[2]
         Y1 = pixel_ColorChange[3] - 1 # Don't want to crop the first pixel row of frame
         row = Y0
-        success, pixel_ColorChange = pixelScan(tbBlue_Check2_H, [screenshot.getpixel((i, row)) for i in range(screenshot.size[0])])
+        success, pixel_ColorChange = pixelScan(colorsH, [screenshot.getpixel((i, row)) for i in range(screenshot.size[0])])
         if success:
             X0 = pixel_ColorChange[2]
             X1 = pixel_ColorChange[3] - 1
@@ -274,6 +277,11 @@ while True:
     # Grab the screen
     screenshotWhole = ImageGrab.grab()
 
-    detected, where = detectBlue(screenshotWhole)
+    detected, where = detectTextBox_1(screenshotWhole, tbBlue_Check1_V, tbBlue_Check2_H)
+    print(f"Blue: {detected} at {where}", end="; ")
 
-    print(f"Blue is detected: {detected} at {where}")
+    detected, where = detectTextBox_1(screenshotWhole, tbGrey_Check1_V, tbGrey_Check2_H)
+    print(f"Grey: {detected} at {where}", end="; ")
+
+    detected, where = detectTextBox_1(screenshotWhole, tbFight_Check1_V, tbFight_Check2_H)
+    print(f"Blue: {detected} at {where}")
