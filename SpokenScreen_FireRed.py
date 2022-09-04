@@ -12,158 +12,9 @@ PIXEL_COLOR_TOLERANCE = 0
 VERTICAL_FIRST_MODE = False
 HORIZONTAL_FIRST_MODE = True
 
-class EnumDetectState(Enum):
-    init = enumAuto()
-    outer_1 = enumAuto()
-    inner_1 = enumAuto()
-    fill = enumAuto()
-    inner_2 = enumAuto()
-    outer_2 = enumAuto()
-
-class DE_ColorSet:
-    def __init__(self,
-        O1 : tuple[int,int,int], I1 : tuple[int,int,int],
-        F : tuple[int,int,int],
-        I2 : tuple[int,int,int], O2 : tuple[int,int,int]) -> None:
-            self.O1 = O1
-            self.I1 = I1
-            self.F = F
-            self.I2 = I2
-            self.O2 = O2
-
 """
-In the following section, the detectable Element colors are defined:
-
-Blue Textbox
-Grey Textbox
-Fight Textbox
-
---- More will be added as this program's functionality is expanded
+Get directory and file paths
 """
-
-tbBlue_Check1_V = DE_ColorSet(
-    VO1 =   (72, 112, 160),
-    VI1 =   (160, 208, 224),
-    VF =    (248,248,248)
-    VI2 =   (160, 208, 224),
-    VO2 =   (72, 112, 160)
-)
-
-
-
-
-
-# State machine, returns detection result, fill start pixel, fill end pixel
-def pixelScan_ByPercent(self, colors : DE_ColorSet, pixels : list[tuple[int,int,int]]) -> tuple(bool, int, int):
-
-    detectState = EnumDetectState.init
-
-    for i, pix in enumerate(pixels):
-        if detectState == EnumDetectState.init:
-
-            if colors.O1 == pix:
-                detectState = EnumDetectState.outer_1
-
-        if detectState == EnumDetectState.outer_1:
-
-            if colors.I1 == pix:
-                detectState = EnumDetectState.inner_1
-            elif pix != colors.O1 and pix != colors.I1:
-                detectState = EnumDetectState.init
-
-        if detectState == EnumDetectState.inner_1:
-
-            if colors.F == pix:
-                detectState = EnumDetectState.fill
-                fillStart = i
-            elif pix != colors.I1 and pix != colors.F:
-                detectState = EnumDetectState.init
-
-        if detectState == EnumDetectState.fill:
-
-            if colors.I2 == pix:
-                detectState = EnumDetectState.inner_2
-                fillEnd = i - 1
-            # There is no wrong-color-recovery for fill, because the
-            # element contents are assumed to be complex (like various text characters)
-
-        if detectState == EnumDetectState.inner_2:
-
-            if colors.O2 == pix:
-                detectState = EnumDetectState.outer_2
-                break
-            elif pix != colors.I2 and pix != colors.O2:
-                detectState = EnumDetectState.init
-        
-    return detectState, fillStart, fillEnd
-
-class DetectableElement:
-
-    # The colors are all tuples of length 3, for RGB
-    def __init__(self) -> None:
-        self.detected = False
-
-    # This state machine scans for the color markers of a detectable element
-    def detectElement(self, scanMode : bool, percentW : float, percentH : float, screenshot : Image):
-
-        ss_W, ss_H = screenshot.size()
-
-        if percentW > 1.0 or percentW <= 0.0:
-            msg = f"Cannot set percentW to {percentW}"
-            logging.fatal(msg)
-            raise ValueError(msg)
-
-        if percentH > 1.0 or percentH <= 0.0:
-            msg = f"Cannot set percentH to {percentH}"
-            logging.fatal(msg)
-            raise ValueError(msg)
-
-        # Scan for element across vertical and horizontal pixel lines
-        if scanMode == VERTICAL_FIRST_MODE:
-
-            index_pixelColumn = ss_W * percentW
-            pixels = [screenshot.getpixel(index_pixelColumn,i) for i in range(ss_H)]
-
-            success, self.fill_Y0, self.fill_Y1 = self.pixelScan(self.colors[0],pixels)
-
-            if success:
-                index_pixelRow = percentH * (self.fill_Y1 - self.fill_Y0) + self.fill_Y0
-                pixels = [screenshot.getpixel(i,index_pixelRow) for i in range(ss_W)]
-
-                return self.pixelScan(self.colors[1],pixels)
-        
-        else:
-
-            index_pixelRow = ss_H * percentH
-            pixels = [screenshot.getpixel(i,index_pixelRow) for i in range(ss_W)]
-
-            success, self.fill_X0, self.fill_X1 = self.pixelScan(self.colors[1],pixels)
-
-            if success:
-                index_pixelColumn = percentW * (self.fill_X1 - self.fill_X0) + self.fill_X0
-                pixels = [screenshot.getpixel(index_pixelColumn,i) for i in range(ss_H)]
-
-                return self.pixelScan(self.colors[0],pixels)
-
-
-
-class color_terminalBlock_Grey:
-    outer = (104, 112, 120)
-    inner = (200, 200, 216)
-    fill = (248, 248, 248)
-
-
-class color_terminalBlock_Fight:
-    outer = (200, 168, 72)
-    inner = (224, 216, 224)
-    fill = (40, 80, 104)
-
-class color_fightMenu:
-    outer = (112, 104, 128)
-    inner = (2166, 208, 216)
-    fill = (248, 248, 248)
-
-# Get directory and file paths
 class path:
     dir = os.path.dirname(os.path.realpath(__file__))
     common = os.path.join(dir,'common')
@@ -215,6 +66,191 @@ Set up logging. There are two logs:
 """
 logging.config.fileConfig(path.file_logConfig, disable_existing_loggers=False)
 
+class EnumDetectState(Enum):
+    init = enumAuto()
+    outer_1 = enumAuto()
+    inner_1 = enumAuto()
+    fill = enumAuto()
+    inner_2 = enumAuto()
+    outer_2 = enumAuto()
+
+class DE_ColorSet:
+    def __init__(self,
+        O1 : tuple[int,int,int], I1 : tuple[int,int,int],
+        F : tuple[int,int,int],
+        I2 : tuple[int,int,int], O2 : tuple[int,int,int]) -> None:
+            self.O1 = O1
+            self.I1 = I1
+            self.F = F
+            self.I2 = I2
+            self.O2 = O2
+
+"""
+In the following section, the detectable Element colors are defined:
+
+Blue Textbox
+Grey Textbox
+Fight Textbox
+
+--- More will be added as this program's functionality is expanded
+"""
+
+"""Blue"""
+# These colors correspond to the sequence expected for the middle-body of a blue dialogue text box
+tbBlue_Check1_V = DE_ColorSet(
+    O1 =   (72, 112, 160),
+    I1 =   (160, 208, 224),
+    F =    (248,248,248),
+    I2 =   (160, 208, 224),
+    O2 =   (72, 112, 160)
+)
+
+# These colors correspond to the sequence expected for the top-pixel edge of a blue dialog text box.
+# This is desirable because it gives us the starting X-Coordinate for the full text box
+tbBlue_Check2_H = DE_ColorSet(
+    O1 =   (160, 208, 224),
+    I1 =   (208, 224, 240),
+    F =    (248,248,248),
+    I2 =   (208, 224, 240),
+    O2 =   (160, 208, 224)
+)
+
+"""Grey"""
+# These colors correspond to the sequence expected for the middle-body of a grey dialogue text box
+tbGrey_Check1_V = DE_ColorSet(
+    O1 =   (104, 112, 120),
+    I1 =   (200, 200, 216),
+    F =    (248,248,248),
+    I2 =   (200, 200, 216),
+    O2 =   (104, 112, 120)
+)
+
+# The same check is used because the horizontal scan colors are the same
+tbGrey_Check2_H = tbBlue_Check1_V
+
+"""Fight"""
+# These colors correspond to the sequence expected for the middle-body of a fight dialogue text box
+tbFight_Check1_V = DE_ColorSet(
+    O1 =   (200, 168, 72),
+    I1 =   (224, 216, 224),
+    F =    (40, 80, 104),
+    I2 =   (224, 216, 224),
+    O2 =   (200, 168, 72)
+)
+
+# The same check is used because the horizontal scan colors are the same
+tbFight_Check2_H = tbFight_Check1_V
+
+# State machine, returns detection result, fill start pixel, fill end pixel
+def pixelScan(colors : DE_ColorSet, pixels : list[tuple[int,int,int]]) -> tuple[bool, list]:
+
+    detectState = EnumDetectState.init
+    pixel_ColorChange = []
+
+    for i, pix in enumerate(pixels):
+        if detectState == EnumDetectState.init:
+
+            if colors.O1 == pix:
+                # print("Found Outer 1")
+                detectState = EnumDetectState.outer_1
+                pixel_ColorChange.append(i)
+                # print(pixel_ColorChange)
+
+        if detectState == EnumDetectState.outer_1:
+
+            if colors.I1 == pix:
+                detectState = EnumDetectState.inner_1
+                pixel_ColorChange.append(i)
+                # print(pixel_ColorChange)
+            elif pix != colors.O1 and pix != colors.I1:
+                detectState = EnumDetectState.init
+
+        if detectState == EnumDetectState.inner_1:
+
+            if colors.F == pix:
+                detectState = EnumDetectState.fill
+                pixel_ColorChange.append(i)
+                # print(pixel_ColorChange)
+            elif pix != colors.I1 and pix != colors.F:
+                detectState = EnumDetectState.init
+
+        if detectState == EnumDetectState.fill:
+
+            if colors.I2 == pix:
+                detectState = EnumDetectState.inner_2
+                pixel_ColorChange.append(i)
+                # print(pixel_ColorChange)
+            # There is no wrong-color-recovery for fill, because the
+            # element contents are assumed to be complex (like various text characters)
+
+        if detectState == EnumDetectState.inner_2:
+
+            if colors.O2 == pix:
+                detectState = EnumDetectState.outer_2
+                pixel_ColorChange.append(i)
+                # print(pixel_ColorChange)
+            elif pix != colors.I2 and pix != colors.O2:
+                detectState = EnumDetectState.init
+
+        if detectState == EnumDetectState.outer_2:
+
+            if colors.O2 != pix:
+                pixel_ColorChange.append(i)
+                # print(pixel_ColorChange)
+                break
+        
+    return detectState == EnumDetectState.outer_2, pixel_ColorChange
+
+class DetectableElement:
+
+    # The colors are all tuples of length 3, for RGB
+    def __init__(self) -> None:
+        self.detected = False
+
+    def manage(self) -> None:
+        self.detected = False
+
+textBox_Blue = DetectableElement()
+
+# Takes screenshot, returns success/failure bool and X0, Y0, Width, Height tuple
+def detectBlue(screenshot : Image) -> tuple[bool, tuple[int,int,int,int]]:
+    X0 = 0
+    Y0 = 0
+    X1 = 0
+    Y1 = 0
+    detected = False
+
+    # Step 1: Look scan for pixels on virtical centerline of monitor
+    column = int(screenshot.size[0] / 2)
+
+    # print(f"column: {column}")
+    # print(f"range(screenshot.size[1]) : {range(screenshot.size[1])}")
+
+    pixelList = [screenshot.getpixel((column, i)) for i in range(screenshot.size[1])]
+    # print(f"Len pixel {len(pixelList)}")
+    success, pixel_ColorChange = pixelScan(tbBlue_Check1_V, pixelList)
+    # print(f"pixelColorChange: {pixel_ColorChange}", end="; ")
+    if success:
+        Y0 = pixel_ColorChange[2]
+        Y1 = pixel_ColorChange[3] - 1 # Don't want to crop the first pixel row of frame
+        row = Y0
+        success, pixel_ColorChange = pixelScan(tbBlue_Check2_H, [screenshot.getpixel((i, row)) for i in range(screenshot.size[0])])
+        if success:
+            X0 = pixel_ColorChange[2]
+            X1 = pixel_ColorChange[3] - 1
+            detected = True
+    
+    return detected, (X0, Y0, X1-X0, Y1-Y0)
+            
+
+
+class color_fightMenu:
+    outer = (112, 104, 128)
+    inner = (2166, 208, 216)
+    fill = (248, 248, 248)
+
+
+
 """
 This function opens the file hashTable.csv
 and parses the hashes, saved as hex strings,
@@ -237,3 +273,7 @@ while True:
 
     # Grab the screen
     screenshotWhole = ImageGrab.grab()
+
+    detected, where = detectBlue(screenshotWhole)
+
+    print(f"Blue is detected: {detected} at {where}")
