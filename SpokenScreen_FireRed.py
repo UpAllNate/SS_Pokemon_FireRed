@@ -212,35 +212,31 @@ def detectTextBox_1(screenshot : Image, colorsV : DE_ColorSet, colorsH : DE_Colo
     Y1 = 0
     detected = False
 
-    # Step 1: Look scan for pixels on virtical centerline of monitor
+    # Step 1: Scan for pixels on virtical centerline of monitor
     column = int(screenshot.size[0] / 2)
-
-    # print(f"column: {column}")
-    # print(f"range(screenshot.size[1]) : {range(screenshot.size[1])}")
-
     pixelList = [screenshot.getpixel((column, i)) for i in range(screenshot.size[1])]
-    # print(f"Len pixel {len(pixelList)}")
     success, pixel_ColorChange = pixelScan(colorsV, pixelList)
-    # print(f"pixelColorChange: {pixel_ColorChange}", end="; ")
+
     if success:
         Y0 = pixel_ColorChange[2]
         Y1 = pixel_ColorChange[3] - 1 # Don't want to crop the first pixel row of frame
+
+        # Step 2: Scan for pixels on top row of the image
         row = Y0
         success, pixel_ColorChange = pixelScan(colorsH, [screenshot.getpixel((i, row)) for i in range(screenshot.size[0])])
+
         if success:
             X0 = pixel_ColorChange[2]
             X1 = pixel_ColorChange[3] - 1
             detected = True
     
-    return detected, (X0, Y0, X1-X0, Y1-Y0)
+    # Detected bool, (x,y) top left corner, width, height
+    return detected, ((X0, Y0), (X1, Y1))
             
-
-
 class color_fightMenu:
     outer = (112, 104, 128)
     inner = (2166, 208, 216)
     fill = (248, 248, 248)
-
 
 
 """
@@ -266,16 +262,21 @@ while True:
     # Grab the screen
     screenshotWhole = ImageGrab.grab()
 
-    detected, where = detectTextBox_1(screenshotWhole, tbBlue_Check1_V, tbBlue_Check2_H)
-    upperLeft = (where[0], where[1])
-    lowerRight = (where[0] + where[2], where[1] + where[3])
-    print(f"Blue: {detected} at {where}", end="; ")
+    detected, (xy_TopLeft, xy_BottomRight) = detectTextBox_1(screenshotWhole, tbBlue_Check1_V, tbBlue_Check2_H)
+    print(f"Blue: {detected} at {xy_TopLeft}, w: {xy_TopLeft[0] + xy_BottomRight[0]}, h: {xy_TopLeft[1] + xy_BottomRight[1]}")
+
     if detected:
-        croppedBlue = screenshotWhole.crop((upperLeft[0], upperLeft[1], lowerRight[0], lowerRight[1]))
-        croppedBlue.save("S:\\text\\file.png")
+        croppedBlue = screenshotWhole.crop((xy_TopLeft[0], xy_TopLeft[1], xy_BottomRight[0], xy_BottomRight[1]))
+        croppedBlue.save("S:\\text\\blue.png")
 
-    detected, where = detectTextBox_1(screenshotWhole, tbGrey_Check1_V, tbGrey_Check2_H)
-    print(f"Grey: {detected} at {where}", end="; ")
+    detected, (xy_TopLeft, xy_BottomRight) = detectTextBox_1(screenshotWhole, tbGrey_Check1_V, tbGrey_Check2_H)
 
-    detected, where = detectTextBox_1(screenshotWhole, tbFight_Check1_V, tbFight_Check2_H)
-    print(f"Blue: {detected} at {where}")
+    if detected:
+        croppedBlue = screenshotWhole.crop((xy_TopLeft[0], xy_TopLeft[1], xy_BottomRight[0], xy_BottomRight[1]))
+        croppedBlue.save("S:\\text\\grey.png")
+
+    detected, (xy_TopLeft, xy_BottomRight) = detectTextBox_1(screenshotWhole, tbFight_Check1_V, tbFight_Check2_H)
+
+    if detected:
+        croppedBlue = screenshotWhole.crop((xy_TopLeft[0], xy_TopLeft[1], xy_BottomRight[0], xy_BottomRight[1]))
+        croppedBlue.save("S:\\text\\fight.png")
