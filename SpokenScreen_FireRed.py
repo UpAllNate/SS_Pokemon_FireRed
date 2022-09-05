@@ -74,6 +74,12 @@ class EnumDetectState(Enum):
     inner_2 = enumAuto()
     outer_2 = enumAuto()
 
+class EnumTextBoxRowPercentage(Enum):
+    Line1_Start =   0.1634615385
+    Line1_End =     0.2988505747
+    Line2_Start =   0.2950819672
+    Line2_End =     0.6046511628
+
 class DE_ColorSet:
     def __init__(self,
         O1 : tuple[int,int,int], I1 : tuple[int,int,int],
@@ -262,14 +268,19 @@ while True:
     # Grab the screen
     screenshotWhole = ImageGrab.grab()
 
-    detected, (xy_TopLeft, xy_BottomRight) = detectTextBox_1(screenshotWhole, tbBlue_Check1_V, tbBlue_Check2_H)
-    if detected:
-        croppedBlue = screenshotWhole.crop((xy_TopLeft[0], xy_TopLeft[1], xy_BottomRight[0], xy_BottomRight[1]))
+    """
+    This section of the code checks for a blue, grey, or fight text box.
+    If any is detected, the cropped text will be saved in croppedTextBox
+    for further processing
+    """
+    detectedBlue, (xy_TopLeft, xy_BottomRight) = detectTextBox_1(screenshotWhole, tbBlue_Check1_V, tbBlue_Check2_H)
+    if detectedBlue:
+        croppedTextBox = screenshotWhole.crop((xy_TopLeft[0], xy_TopLeft[1], xy_BottomRight[0], xy_BottomRight[1]))
+    
+    detectedGrey, (xy_TopLeft, xy_BottomRight) = detectTextBox_1(screenshotWhole, tbGrey_Check1_V, tbGrey_Check2_H)
+    if detectedGrey:
+        croppedTextBox = screenshotWhole.crop((xy_TopLeft[0], xy_TopLeft[1], xy_BottomRight[0], xy_BottomRight[1]))
 
-    detected, (xy_TopLeft, xy_BottomRight) = detectTextBox_1(screenshotWhole, tbGrey_Check1_V, tbGrey_Check2_H)
-    if detected:
-        croppedBlue = screenshotWhole.crop((xy_TopLeft[0], xy_TopLeft[1], xy_BottomRight[0], xy_BottomRight[1]))
-
-    detected, (xy_TopLeft, xy_BottomRight) = detectTextBox_1(screenshotWhole, tbFight_Check1_V, tbFight_Check2_H)
-    if detected:
-        croppedBlue = screenshotWhole.crop((xy_TopLeft[0], xy_TopLeft[1], xy_BottomRight[0], xy_BottomRight[1]))
+    detectedFight, (xy_TopLeft, xy_BottomRight) = detectTextBox_1(screenshotWhole, tbFight_Check1_V, tbFight_Check2_H)
+    if detectedFight:
+        croppedTextBox = screenshotWhole.crop((xy_TopLeft[0], xy_TopLeft[1], xy_BottomRight[0], xy_BottomRight[1]))
