@@ -74,12 +74,19 @@ class EnumDetectState(Enum):
     inner_2 = enumAuto()
     outer_2 = enumAuto()
 
-class EnumTextBoxRowPercentage():
-    Line1_Start =   0.1634615385
-    Line1_End =     0.4038461538
-    Line2_Start =   0.5865384615
-    Line2_End =     0.8269230769
-    RedArrowCheck = 0.25
+class EnumFightBoxRowPercentage():
+    Line1_Start =   0.1761904762
+    Line1_End =     0.4380952381
+    Line2_Start =   0.6523809524
+    Line2_End =     0.9142857143
+
+class EnumBlueBoxRowPercentage():
+    Line1_Start =   0.1696428571
+    Line1_End =     0.4151785714
+    Line2_Start =   0.5848214286
+    Line2_End =     0.8303571429
+
+RED_ARROW_CHECK_PERCENT = 0.25
 
 class DE_ColorSet:
     def __init__(self,
@@ -150,30 +157,47 @@ tbFight_Check1_V = DE_ColorSet(
 tbFight_Check2_H = tbFight_Check1_V
 
 """Red Arrows"""
-RedArrow_BlueTB = (224, 8, 8)
-RedArrow_FightTB = (248, 0, 0)
+RedArrow_BlueTB = DE_ColorSet(
+    O1 =   (248, 248, 248),
+    I1 =   (96, 96, 96),
+    F =    (224, 0, 0),
+    I2 =   (96, 96, 96),
+    O2 =   (248, 248, 248)
+)
+
+RedArrow_FightTB = DE_ColorSet(
+    O1 =   (40, 80, 104),
+    I1 =   (40, 48, 48),
+    F =    (248, 0, 0),
+    I2 =   (40, 48, 48),
+    O2 =   (40, 80, 104)
+)
+
+def getPixelRow(im : Image, row : int) -> list[tuple[int,int,int]]:
+    return [im.getpixel((i, row)) for i in range(im.width)]
+
+def getPixelColumn(im : Image, column : int) -> list[tuple[int,int,int]]:
+    return [im.getpixel((column, i)) for i in range(im.height)]
 
 # State machine, returns detection result, fill start pixel, fill end pixel
 def pixelScan(colors : DE_ColorSet, pixels : list[tuple[int,int,int]]) -> tuple[bool, list]:
 
     detectState = EnumDetectState.init
-    pixel_ColorChange = []
 
     for i, pix in enumerate(pixels):
         if detectState == EnumDetectState.init:
 
+            pixel_ColorChange = []
+
             if colors.O1 == pix:
-                # print("Found Outer 1")
                 detectState = EnumDetectState.outer_1
                 pixel_ColorChange.append(i)
-                # print(pixel_ColorChange)
 
         if detectState == EnumDetectState.outer_1:
 
             if colors.I1 == pix:
                 detectState = EnumDetectState.inner_1
                 pixel_ColorChange.append(i)
-                # print(pixel_ColorChange)
             elif pix != colors.O1 and pix != colors.I1:
                 detectState = EnumDetectState.init
 
@@ -182,7 +206,6 @@ def pixelScan(colors : DE_ColorSet, pixels : list[tuple[int,int,int]]) -> tuple[
             if colors.F == pix:
                 detectState = EnumDetectState.fill
                 pixel_ColorChange.append(i)
-                # print(pixel_ColorChange)
             elif pix != colors.I1 and pix != colors.F:
                 detectState = EnumDetectState.init
 
@@ -191,7 +214,6 @@ def pixelScan(colors : DE_ColorSet, pixels : list[tuple[int,int,int]]) -> tuple[
             if colors.I2 == pix:
                 detectState = EnumDetectState.inner_2
                 pixel_ColorChange.append(i)
-                # print(pixel_ColorChange)
             # There is no wrong-color-recovery for fill, because the
             # element contents are assumed to be complex (like various text characters)
 
@@ -200,7 +222,6 @@ def pixelScan(colors : DE_ColorSet, pixels : list[tuple[int,int,int]]) -> tuple[
             if colors.O2 == pix:
                 detectState = EnumDetectState.outer_2
                 pixel_ColorChange.append(i)
-                # print(pixel_ColorChange)
             elif pix != colors.I2 and pix != colors.O2:
                 detectState = EnumDetectState.init
 
@@ -208,7 +229,6 @@ def pixelScan(colors : DE_ColorSet, pixels : list[tuple[int,int,int]]) -> tuple[
 
             if colors.O2 != pix:
                 pixel_ColorChange.append(i)
-                # print(pixel_ColorChange)
                 break
         
     if detectState == EnumDetectState.outer_2:
@@ -225,8 +245,7 @@ def detectTextBox_1(screenshot : Image, colorsV : DE_ColorSet, colorsH : DE_Colo
     detected = False
 
     # Step 1: Scan for pixels on virtical centerline of monitor
-    column = int(screenshot.size[0] / 2)
-    pixelList = [screenshot.getpixel((column, i)) for i in range(screenshot.size[1])]
+    pixelList = getPixelColumn(screenshot,int(screenshot.width / 2))
     success, pixel_ColorChange = pixelScan(colorsV, pixelList)
 
     if success:
@@ -234,8 +253,7 @@ def detectTextBox_1(screenshot : Image, colorsV : DE_ColorSet, colorsH : DE_Colo
         Y1 = pixel_ColorChange[3] - 1 # Don't want to crop the first pixel row of frame
 
         # Step 2: Scan for pixels on top row of the image
-        row = Y0
-        success, pixel_ColorChange = pixelScan(colorsH, [screenshot.getpixel((i, row)) for i in range(screenshot.size[0])])
+        success, pixel_ColorChange = pixelScan(colorsH, getPixelRow(screenshot,Y0))
 
         if success:
             X0 = pixel_ColorChange[2]
@@ -287,6 +305,7 @@ while True:
         backgroundColor = tbBlue_Check1_V.F
         redArrowColor = RedArrow_BlueTB
         croppedTextBox = screenshotWhole.crop((xy_TopLeft[0], xy_TopLeft[1], xy_BottomRight[0], xy_BottomRight[1]))
+        croppedTextBox.save("S:\\text\\Blue_Cropped.png")
 
     detectedGrey, (xy_TopLeft, xy_BottomRight) = detectTextBox_1(screenshotWhole, tbGrey_Check1_V, tbGrey_Check2_H)
     if detectedGrey:
@@ -294,6 +313,7 @@ while True:
         backgroundColor = tbGrey_Check1_V.F
         redArrowColor = RedArrow_BlueTB
         croppedTextBox = screenshotWhole.crop((xy_TopLeft[0], xy_TopLeft[1], xy_BottomRight[0], xy_BottomRight[1]))
+        croppedTextBox.save("S:\\text\\Grey_Cropped.png")
 
     detectedFight, (xy_TopLeft, xy_BottomRight) = detectTextBox_1(screenshotWhole, tbFight_Check1_V, tbFight_Check2_H)
     if detectedFight:
@@ -301,6 +321,19 @@ while True:
         backgroundColor = tbFight_Check1_V.F
         redArrowColor = RedArrow_FightTB
         croppedTextBox = screenshotWhole.crop((xy_TopLeft[0], xy_TopLeft[1], xy_BottomRight[0], xy_BottomRight[1]))
+        croppedTextBox.save("S:\\text\\Fight_Cropped.png")
+
+    if detectedBlue or detectedGrey:
+        Line1_Start = EnumBlueBoxRowPercentage.Line1_Start
+        Line1_End = EnumBlueBoxRowPercentage.Line1_End
+        Line2_Start = EnumBlueBoxRowPercentage.Line2_Start
+        Line2_End = EnumBlueBoxRowPercentage.Line2_End
+    
+    if detectedFight:
+        Line1_Start = EnumFightBoxRowPercentage.Line1_Start
+        Line1_End = EnumFightBoxRowPercentage.Line1_End
+        Line2_Start = EnumFightBoxRowPercentage.Line2_Start
+        Line2_End = EnumFightBoxRowPercentage.Line2_End
     
     if anyDetected:
         
@@ -312,34 +345,107 @@ while True:
         tbLines.append(
             croppedTextBox.crop((
                 0,
-                height * EnumTextBoxRowPercentage.Line1_Start,
+                height * Line1_Start,
                 width,
-                height * EnumTextBoxRowPercentage.Line1_End
+                height * Line1_End
                 ))
             )
         tbLines.append(
             croppedTextBox.crop((
                 0,
-                height * EnumTextBoxRowPercentage.Line2_Start,
+                height * Line2_Start,
                 width,
-                height * EnumTextBoxRowPercentage.Line2_End
+                height * Line2_End
                 ))
             )
 
-        # Delete the stupid red arrow from each line
-        for index, im in enumerate(tbLines):
-            redDetected = False
-            height = im.height
-            row = height * EnumTextBoxRowPercentage.RedArrowCheck
-            for pix in [im.getpixel((i, row)) for i in range(im.width)]:
-                if pix == redArrowColor:
-                    redDetected = True
-            if index == 0:
-                print(f"Row {index} red detected: {redDetected}")
-
-        
         tbStripped = Image.new('RGBA', (width, tbLines[0].height + tbLines[1].height))
         tbStripped.paste(tbLines[0], (0,0))
         tbStripped.paste(tbLines[1], (0,tbLines[0].height))
         # print(f"Stripped image is \tw: {tbStripped.width}\th: {tbStripped.height}")
+        tbStripped.save("S:\\Text\\BeforeRedArrowRemoval.png")
+
+        # Delete the stupid red arrow from each line
+        for im in tbLines:
+
+            startingRow = int(im.height * RED_ARROW_CHECK_PERCENT)
+           
+            redDetected, pixel_ColorChange = pixelScan(redArrowColor, getPixelRow(im, startingRow))
+            
+            if redDetected:
+
+                # print("Red Detected")
+
+                # print(pixel_ColorChange)
+                
+                startingColumn = pixel_ColorChange[1]
+                edgeFound = False # Initialize
+
+                # Find the top edge of the red arrow
+                offset = 1
+                while not edgeFound:
+                    nextRow = startingRow - offset
+
+                    # If we get to the top edge of the image, that's the edge
+                    if nextRow < 0:
+                        edgeFound = True
+                        edge_Y = 0
+                
+                    # If we hit background color, we found the edge on the last pixel
+                    elif im.getpixel((startingColumn, nextRow)) == backgroundColor:
+                        edgeFound = True
+                        edge_Y = nextRow + 1
+
+                    # Increment to look at the next pixel going upward
+                    offset = offset + 1
+                
+                # Find the left edge of the red arrow
+                offset = 1
+                edgeFound = False
+                while not edgeFound:
+                    nextColumn = startingColumn - offset
+
+                    # If we get to the top edge of the image, that's the edge
+                    if nextColumn < 0:
+                        raise ValueError("Didn't find arrow left edge")
+                
+                    # If we hit background color, we found the edge on the last pixel
+                    elif im.getpixel((nextColumn, edge_Y)) == backgroundColor:
+                        edgeFound = True
+                        edge_X = nextColumn + 1
+
+                    # Increment to look at the next pixel going upward
+                    offset = offset + 1
+ 
+                # print(f"top left coordinate is: ({edge_X},{edge_Y})")
+                # print(f"Detected pixel is color: {im.getpixel((edge_X, edge_Y))}")
+                
+                allComplete_X = False
+                currentX = edge_X
+                offset_X = 0
+                while not allComplete_X:
+
+                    allComplete_Y = False
+                    currentY = edge_Y
+                    offset_Y = 0
+                    while not allComplete_Y:
+
+                        # print(f"({currentX},{currentY})")
+
+                        if im.getpixel((currentX, currentY)) == backgroundColor:
+                            allComplete_Y = True
+                        else:
+                            im.putpixel((currentX, currentY), (backgroundColor[0], backgroundColor[1], backgroundColor[2], 255))
+                        
+                        currentY = currentY + 1
+
+                    currentX = currentX + 1
+
+                    if im.getpixel((currentX,edge_Y)) == backgroundColor:
+                        allComplete_X = True
+        
+        tbStripped = Image.new('RGBA', (width, tbLines[0].height + tbLines[1].height))
+        tbStripped.paste(tbLines[0], (0,0))
+        tbStripped.paste(tbLines[1], (0,tbLines[0].height))
+        print(f"Stripped image is \tw: {tbStripped.width}\th: {tbStripped.height}")
         tbStripped.save("S:\\Text\\Stripped.png")
