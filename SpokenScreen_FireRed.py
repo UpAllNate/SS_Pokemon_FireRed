@@ -232,7 +232,7 @@ def detectTextBox_1(screenshot : Image, colorsV : DE_ColorSet, colorsH : DE_Colo
     
     # Detected bool, (x,y) top left corner, width, height
     return detected, ((X0, Y0), (X1, Y1))
-            
+
 class color_fightMenu:
     outer = (112, 104, 128)
     inner = (2166, 208, 216)
@@ -263,20 +263,13 @@ while True:
     screenshotWhole = ImageGrab.grab()
 
     detected, (xy_TopLeft, xy_BottomRight) = detectTextBox_1(screenshotWhole, tbBlue_Check1_V, tbBlue_Check2_H)
-    print(f"Blue: {detected} at {xy_TopLeft}, w: {xy_TopLeft[0] + xy_BottomRight[0]}, h: {xy_TopLeft[1] + xy_BottomRight[1]}")
-
     if detected:
         croppedBlue = screenshotWhole.crop((xy_TopLeft[0], xy_TopLeft[1], xy_BottomRight[0], xy_BottomRight[1]))
-        croppedBlue.save("S:\\text\\blue.png")
 
     detected, (xy_TopLeft, xy_BottomRight) = detectTextBox_1(screenshotWhole, tbGrey_Check1_V, tbGrey_Check2_H)
-
     if detected:
         croppedBlue = screenshotWhole.crop((xy_TopLeft[0], xy_TopLeft[1], xy_BottomRight[0], xy_BottomRight[1]))
-        croppedBlue.save("S:\\text\\grey.png")
 
     detected, (xy_TopLeft, xy_BottomRight) = detectTextBox_1(screenshotWhole, tbFight_Check1_V, tbFight_Check2_H)
-
     if detected:
         croppedBlue = screenshotWhole.crop((xy_TopLeft[0], xy_TopLeft[1], xy_BottomRight[0], xy_BottomRight[1]))
-        croppedBlue.save("S:\\text\\fight.png")
