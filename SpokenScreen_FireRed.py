@@ -449,3 +449,42 @@ while True:
         tbStripped.paste(tbLines[1], (0,tbLines[0].height))
         print(f"Stripped image is \tw: {tbStripped.width}\th: {tbStripped.height}")
         tbStripped.save("S:\\Text\\Stripped.png")
+
+        # Break stripped TB image into four parts
+
+        squareWidth = int(tbStripped.width / 4) - 1
+
+        tbChunks = []
+        tbChunks.append( tbStripped.crop((
+                            0,
+                            0,
+                            squareWidth - 1,
+                            tbStripped.height
+                        )))
+        tbChunks.append( tbStripped.crop((
+                            squareWidth,
+                            0,
+                            squareWidth * 2 - 1,
+                            tbStripped.height
+                        )))
+        tbChunks.append( tbStripped.crop((
+                            squareWidth * 2,
+                            0,
+                            squareWidth * 3 - 1,
+                            tbStripped.height
+                        )))
+        tbChunks.append( tbStripped.crop((
+                            squareWidth * 3,
+                            0,
+                            squareWidth * 4 - 1,
+                            tbStripped.height
+                        )))
+
+        tbSquare = Image.new('RGBA', (squareWidth, tbStripped.height * 4))
+
+        y_offset = 0
+        for im in tbChunks:
+            tbSquare.paste(im, (0,y_offset))
+            y_offset += im.size[1]
+
+        tbSquare.save("S:\\text\\Square.png")
