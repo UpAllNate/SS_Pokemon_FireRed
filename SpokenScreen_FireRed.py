@@ -74,11 +74,12 @@ class EnumDetectState(Enum):
     inner_2 = enumAuto()
     outer_2 = enumAuto()
 
-class EnumTextBoxRowPercentage(Enum):
+class EnumTextBoxRowPercentage():
     Line1_Start =   0.1634615385
-    Line1_End =     0.2988505747
-    Line2_Start =   0.2950819672
-    Line2_End =     0.6046511628
+    Line1_End =     0.4038461538
+    Line2_Start =   0.5865384615
+    Line2_End =     0.8269230769
+    RedArrowCheck = 0.25
 
 class DE_ColorSet:
     def __init__(self,
@@ -97,6 +98,7 @@ In the following section, the detectable Element colors are defined:
 Blue Textbox
 Grey Textbox
 Fight Textbox
+RedArrows
 
 --- More will be added as this program's functionality is expanded
 """
@@ -146,6 +148,10 @@ tbFight_Check1_V = DE_ColorSet(
 
 # The same check is used because the horizontal scan colors are the same
 tbFight_Check2_H = tbFight_Check1_V
+
+"""Red Arrows"""
+RedArrow_BlueTB = (224, 8, 8)
+RedArrow_FightTB = (248, 0, 0)
 
 # State machine, returns detection result, fill start pixel, fill end pixel
 def pixelScan(colors : DE_ColorSet, pixels : list[tuple[int,int,int]]) -> tuple[bool, list]:
@@ -273,14 +279,67 @@ while True:
     If any is detected, the cropped text will be saved in croppedTextBox
     for further processing
     """
+    anyDetected = False
+
     detectedBlue, (xy_TopLeft, xy_BottomRight) = detectTextBox_1(screenshotWhole, tbBlue_Check1_V, tbBlue_Check2_H)
     if detectedBlue:
+        anyDetected = True
+        backgroundColor = tbBlue_Check1_V.F
+        redArrowColor = RedArrow_BlueTB
         croppedTextBox = screenshotWhole.crop((xy_TopLeft[0], xy_TopLeft[1], xy_BottomRight[0], xy_BottomRight[1]))
-    
+
     detectedGrey, (xy_TopLeft, xy_BottomRight) = detectTextBox_1(screenshotWhole, tbGrey_Check1_V, tbGrey_Check2_H)
     if detectedGrey:
+        anyDetected = True
+        backgroundColor = tbGrey_Check1_V.F
+        redArrowColor = RedArrow_BlueTB
         croppedTextBox = screenshotWhole.crop((xy_TopLeft[0], xy_TopLeft[1], xy_BottomRight[0], xy_BottomRight[1]))
 
     detectedFight, (xy_TopLeft, xy_BottomRight) = detectTextBox_1(screenshotWhole, tbFight_Check1_V, tbFight_Check2_H)
     if detectedFight:
+        anyDetected = True
+        backgroundColor = tbFight_Check1_V.F
+        redArrowColor = RedArrow_FightTB
         croppedTextBox = screenshotWhole.crop((xy_TopLeft[0], xy_TopLeft[1], xy_BottomRight[0], xy_BottomRight[1]))
+    
+    if anyDetected:
+        
+        width = croppedTextBox.width
+        height = croppedTextBox.height
+
+        # Crop out the two lines of text to maximize information density
+        tbLines = []
+        tbLines.append(
+            croppedTextBox.crop((
+                0,
+                height * EnumTextBoxRowPercentage.Line1_Start,
+                width,
+                height * EnumTextBoxRowPercentage.Line1_End
+                ))
+            )
+        tbLines.append(
+            croppedTextBox.crop((
+                0,
+                height * EnumTextBoxRowPercentage.Line2_Start,
+                width,
+                height * EnumTextBoxRowPercentage.Line2_End
+                ))
+            )
+
+        # Delete the stupid red arrow from each line
+        for index, im in enumerate(tbLines):
+            redDetected = False
+            height = im.height
+            row = height * EnumTextBoxRowPercentage.RedArrowCheck
+            for pix in [im.getpixel((i, row)) for i in range(im.width)]:
+                if pix == redArrowColor:
+                    redDetected = True
+            if index == 0:
+                print(f"Row {index} red detected: {redDetected}")
+
+        
+        tbStripped = Image.new('RGBA', (width, tbLines[0].height + tbLines[1].height))
+        tbStripped.paste(tbLines[0], (0,0))
+        tbStripped.paste(tbLines[1], (0,tbLines[0].height))
+        # print(f"Stripped image is \tw: {tbStripped.width}\th: {tbStripped.height}")
+        tbStripped.save("S:\\Text\\Stripped.png")
