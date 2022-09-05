@@ -4,13 +4,26 @@ import imagehash
 from pathlib import Path as pathFunction
 import logging
 import logging.config
-import pyautogui
 from PIL import Image, ImageGrab
 from enum import Enum, auto as enumAuto
+import winsound
 
 PIXEL_COLOR_TOLERANCE = 0
 VERTICAL_FIRST_MODE = False
 HORIZONTAL_FIRST_MODE = True
+
+FLATHASH_THRESHOLD = 2
+UNIQUEHASH_THRESHOLD = 0
+FLATHASH_COUNTGOAL = 3
+
+HASH_SIZE = 32
+
+prev_playedHash = -1
+flatHash = 0
+hashDiffFlat_Count = 0
+# Initialize prev_hash with correctly sized value
+im = Image.new('RGBA', (500,500))
+prev_hash = imagehash.dhash(im, hash_size=HASH_SIZE)
 
 """
 Get directory and file paths
@@ -488,3 +501,39 @@ while True:
             y_offset += im.size[1]
 
         tbSquare.save("S:\\text\\Square.png")
+
+        # Process hash of square textbox image
+        new_hash = imagehash.dhash(tbSquare, HASH_SIZE)
+        diff = new_hash - prev_hash
+        print(str(new_hash)[0:10] + ", " + str(prev_hash)[0:10] + ", diff = " + str(diff))
+        prev_hash = new_hash
+
+        # Monitor when the text box is steady,
+        # Meaning new characters are not rolling out
+        if diff > FLATHASH_THRESHOLD:
+            hashDiffFlat_Count = 0
+        else:
+            hashDiffFlat_Count += 1
+
+        if hashDiffFlat_Count > FLATHASH_COUNTGOAL:
+            flatHash = 1
+        else:
+            flatHash = 0 
+
+        if flatHash:
+            index0 = 0
+            for x in hashList:
+                if (x == new_hash) and index0 != prev_playedHash:
+                    prev_playedHash = index0
+                    print(f'triggering audio for file {index0}')
+                    fileName = str(index0) + ".wav"
+                    print("FileName: " + fileName)
+                    path_fileName = os.path.join(path.audio,fileName)
+                    print("FilePath: " + path_fileName)
+                    if os.path.exists(path_fileName):
+                        winsound.PlaySound(path_fileName, winsound.SND_ASYNC | winsound.SND_ALIAS )
+                index0 += 1
+
+        else:
+            flatHash = 0
+            hashDiffFlat_Count = 0
