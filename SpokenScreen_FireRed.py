@@ -1,77 +1,17 @@
-import os
-import csv
-import imagehash
-from pathlib import Path as pathFunction
-import logging
-import logging.config
-from PIL import Image, ImageGrab
-from enum import Enum, auto as enumAuto
-import winsound
+from common.ssCoreImports import * # Must import first
+from common.ssPath import * # Must import second
+from common.ssEnums import *
+from common.ssColorSets import *
+from common.ssImageFunctions import *
+from common.ssHashFunctions import *
+from common.ssElementDetection import *
 
-PIXEL_COLOR_TOLERANCE = 0
-VERTICAL_FIRST_MODE = False
-HORIZONTAL_FIRST_MODE = True
-
-FLATHASH_THRESHOLD = 2
-UNIQUEHASH_THRESHOLD = 0
-FLATHASH_COUNTGOAL = 3
-
-HASH_SIZE_LEVEL_1 = 18
-HASH_SIZE_LEVEL_2 = 36
-
-prev_playedHash = -1
+prev_playedHash_ID = -1
 flatHash = 0
 hashDiffFlat_Count = 0
-# Initialize prev_hash with correctly sized value
-im = Image.new('RGBA', (500,500))
-prev_hash = imagehash.dhash(im, hash_size=HASH_SIZE_LEVEL_2)
+prev_hash = None
 
-"""
-Get directory and file paths
-"""
-class path:
-    dir = os.path.dirname(os.path.realpath(__file__))
-    common = os.path.join(dir,'common')
-    reference = os.path.join(common,'reference')
-    audio = os.path.join(common,'audio')
-
-    file_logConfig = os.path.join(common,'logging.conf')
-    file_HashTable = os.path.join(common,'hashTable.csv')
-    file_blueTop = os.path.join(reference,'blue_Top.png')
-    file_fightTop = os.path.join(reference,'fight_Top.png')
-    file_greyTop = os.path.join(reference,'grey_Top.png')
-    file_redArrow_refWhite = os.path.join(reference,'redArrow_refWhite.png')
-    file_redArrow_refBlue = os.path.join(reference,'redArrow_refBlue.png')
-    file_redArrow_eraseWhite = os.path.join(reference,'redArrow_eraseWhite.png')
-    file_redArrow_eraseBlue = os.path.join(reference,'redArrow_eraseBlue.png')
-
-# Validate all required directories are present
-dirs = []
-dirs.append(path.common)
-dirs.append(path.reference)
-dirs.append(path.audio)
-
-for dir in dirs:
-    p = pathFunction(dir)
-    if not p.is_dir:
-        raise ImportError(f"Required directory missing at: {dir}")
-
-# Validate all required files are present
-files = []
-files.append(path.file_logConfig)
-files.append(path.file_HashTable)
-files.append(path.file_blueTop)
-files.append(path.file_fightTop)
-files.append(path.file_greyTop)
-files.append(path.file_redArrow_refWhite)
-files.append(path.file_redArrow_refBlue)
-files.append(path.file_redArrow_eraseWhite)
-files.append(path.file_redArrow_eraseBlue)
-
-for file in files:
-    p = pathFunction(file)
-    if not p.is_file:
-        raise ImportError(f"Required file missing at: {file}")
+debug_SaveDetectionImages = False
 
 """
 Set up logging. There are two logs:
@@ -80,249 +20,28 @@ Set up logging. There are two logs:
 """
 logging.config.fileConfig(path.file_logConfig, disable_existing_loggers=False)
 
-class EnumDetectState(Enum):
-    init = enumAuto()
-    outer_1 = enumAuto()
-    inner_1 = enumAuto()
-    fill = enumAuto()
-    inner_2 = enumAuto()
-    outer_2 = enumAuto()
-
-class EnumFightBoxRowPercentage():
-    Line1_Start =   0.1761904762
-    Line1_End =     0.4380952381
-    Line2_Start =   0.6523809524
-    Line2_End =     0.9142857143
-
-class EnumBlueBoxRowPercentage():
-    Line1_Start =   0.1696428571
-    Line1_End =     0.4151785714
-    Line2_Start =   0.5848214286
-    Line2_End =     0.8303571429
-
-RED_ARROW_CHECK_PERCENT = 0.25
-
-class DE_ColorSet:
-    def __init__(self,
-        O1 : tuple[int,int,int], I1 : tuple[int,int,int],
-        F : tuple[int,int,int],
-        I2 : tuple[int,int,int], O2 : tuple[int,int,int]) -> None:
-            self.O1 = O1
-            self.I1 = I1
-            self.F = F
-            self.I2 = I2
-            self.O2 = O2
-
-"""
-In the following section, the detectable Element colors are defined:
-
-Blue Textbox
-Grey Textbox
-Fight Textbox
-RedArrows
-
---- More will be added as this program's functionality is expanded
-"""
-
-"""Blue"""
-# These colors correspond to the sequence expected for the middle-body of a blue dialogue text box
-tbBlue_Check1_V = DE_ColorSet(
-    O1 =   (72, 112, 160),
-    I1 =   (160, 208, 224),
-    F =    (248,248,248),
-    I2 =   (160, 208, 224),
-    O2 =   (72, 112, 160)
-)
-
-# These colors correspond to the sequence expected for the top-pixel edge of a blue dialog text box.
-# This is desirable because it gives us the starting X-Coordinate for the full text box
-tbBlue_Check2_H = DE_ColorSet(
-    O1 =   (160, 208, 224),
-    I1 =   (208, 224, 240),
-    F =    (248,248,248),
-    I2 =   (208, 224, 240),
-    O2 =   (160, 208, 224)
-)
-
-"""Grey"""
-# These colors correspond to the sequence expected for the middle-body of a grey dialogue text box
-tbGrey_Check1_V = DE_ColorSet(
-    O1 =   (104, 112, 120),
-    I1 =   (200, 200, 216),
-    F =    (248, 248, 248),
-    I2 =   (200, 200, 216),
-    O2 =   (104, 112, 120)
-)
-
-# The same check is used because the horizontal scan colors are the same
-tbGrey_Check2_H = tbGrey_Check1_V
-
-"""Fight"""
-# These colors correspond to the sequence expected for the middle-body of a fight dialogue text box
-tbFight_Check1_V = DE_ColorSet(
-    O1 =   (200, 168, 72),
-    I1 =   (224, 216, 224),
-    F =    (40, 80, 104),
-    I2 =   (224, 216, 224),
-    O2 =   (200, 168, 72)
-)
-
-# The same check is used because the horizontal scan colors are the same
-tbFight_Check2_H = tbFight_Check1_V
-
-"""Red Arrows"""
-RedArrow_BlueTB = DE_ColorSet(
-    O1 =   (248, 248, 248),
-    I1 =   (96, 96, 96),
-    F =    (224, 0, 0),
-    I2 =   (96, 96, 96),
-    O2 =   (248, 248, 248)
-)
-
-RedArrow_FightTB = DE_ColorSet(
-    O1 =   (40, 80, 104),
-    I1 =   (40, 48, 48),
-    F =    (248, 0, 0),
-    I2 =   (40, 48, 48),
-    O2 =   (40, 80, 104)
-)
-
-def getPixelRow(im : Image, row : int) -> list[tuple[int,int,int]]:
-    return [im.getpixel((i, row)) for i in range(im.width)]
-
-def getPixelColumn(im : Image, column : int) -> list[tuple[int,int,int]]:
-    return [im.getpixel((column, i)) for i in range(im.height)]
-
-# State machine, returns detection result, fill start pixel, fill end pixel
-def pixelScan(colors : DE_ColorSet, pixels : list[tuple[int,int,int]]) -> tuple[bool, list]:
-
-    detectState = EnumDetectState.init
-
-    for i, pix in enumerate(pixels):
-        if detectState == EnumDetectState.init:
-
-            pixel_ColorChange = []
-
-            if colors.O1 == pix:
-                detectState = EnumDetectState.outer_1
-                pixel_ColorChange.append(i)
-
-        if detectState == EnumDetectState.outer_1:
-
-            if colors.I1 == pix:
-                detectState = EnumDetectState.inner_1
-                pixel_ColorChange.append(i)
-            elif pix != colors.O1 and pix != colors.I1:
-                detectState = EnumDetectState.init
-
-        if detectState == EnumDetectState.inner_1:
-
-            if colors.F == pix:
-                detectState = EnumDetectState.fill
-                pixel_ColorChange.append(i)
-            elif pix != colors.I1 and pix != colors.F:
-                detectState = EnumDetectState.init
-
-        if detectState == EnumDetectState.fill:
-
-            if colors.I2 == pix:
-                detectState = EnumDetectState.inner_2
-                pixel_ColorChange.append(i)
-            # There is no wrong-color-recovery for fill, because the
-            # element contents are assumed to be complex (like various text characters)
-
-        if detectState == EnumDetectState.inner_2:
-
-            if colors.O2 == pix:
-                detectState = EnumDetectState.outer_2
-                pixel_ColorChange.append(i)
-            elif pix != colors.I2 and pix != colors.O2:
-                detectState = EnumDetectState.init
-
-        if detectState == EnumDetectState.outer_2:
-
-            if colors.O2 != pix:
-                pixel_ColorChange.append(i)
-                break
-        
-    if detectState == EnumDetectState.outer_2:
-        pixel_ColorChange.append(len(pixels))
-        
-    return detectState == EnumDetectState.outer_2, pixel_ColorChange
-
-# Takes screenshot, returns success/failure bool and X0, Y0, Width, Height tuple
-def detectTextBox_1(screenshot : Image, colorsV : DE_ColorSet, colorsH : DE_ColorSet) -> tuple[bool, tuple[int,int,int,int]]:
-    X0 = 0
-    Y0 = 0
-    X1 = 0
-    Y1 = 0
-    detected = False
-
-    # Step 1: Scan for pixels on virtical centerline of monitor
-    pixelList = getPixelColumn(screenshot,int(screenshot.width / 2))
-    success, pixel_ColorChange = pixelScan(colorsV, pixelList)
-
-    if success:
-        Y0 = pixel_ColorChange[2]
-        Y1 = pixel_ColorChange[3] - 1 # Don't want to crop the first pixel row of frame
-
-        # Step 2: Scan for pixels on top row of the image
-        success, pixel_ColorChange = pixelScan(colorsH, getPixelRow(screenshot,Y0))
-
-        if success:
-            X0 = pixel_ColorChange[2]
-            X1 = pixel_ColorChange[3] - 1
-            detected = True
-    
-    # Detected bool, (x,y) top left corner, width, height
-    return detected, ((X0, Y0), (X1, Y1))
-
-class color_fightMenu:
-    outer = (112, 104, 128)
-    inner = (2166, 208, 216)
-    fill = (248, 248, 248)
-
-"""
-This function opens the file hashTable.csv
-and parses the hashes, saved as hex strings,
-back into imagehash objects.
-
-There are two levels of hash, 1 and 2.
-These are defined as constants at the top of the program,
-HASH_SIZE_LEVEL_1 and _2
-
-If there is a collision between the observed image and multiple
-LEVEL_1 hashtable instances, level 2 will be queried for a 
-higher quality comparison.
-
-Level 2 is not used imediately because they are significantly
-larger hashes and therefor slower to compare / compute.
-"""
-
-class HashedImageInstance:
-    def __init__(self, text : str, h_1 : imagehash.ImageHash, h_2 : imagehash.ImageHash) -> None:
-        self.text = text
-        self.h_1 = h_1
-        self.h_2 = h_2
-        
-
-def pokeReadHashTable() -> list: 
-    h = []
-    # Open table
-    with open(path.file_HashTable, mode='r') as file_csv:
-        reader_obj = csv.reader(file_csv)
-        for row in reader_obj:
-            if row[1] != "0":
-                h.append(imagehash.hex_to_hash(row[1]))
-        logging.info(f"Hash table parsing complete; hashes parsed: {len(h)}")
-    return h
-
 hashList = pokeReadHashTable()
+
+def playAudio(hashID):
+
+    global prev_playedHash_ID
+    prev_playedHash_ID = hashID
+
+    print(f'triggering audio for file {hashID}')
+    fileName = str(hashID) + ".wav"
+    print("FileName: " + fileName)
+    path_fileName = os.path.join(path.audio,fileName)
+    print("FilePath: " + path_fileName)
+    if os.path.exists(path_fileName):
+        winsound.PlaySound(path_fileName, winsound.SND_ASYNC | winsound.SND_ALIAS )
 
 while True:
 
     # Grab the screen
     screenshotWhole = ImageGrab.grab()
+
+    if debug_SaveDetectionImages:
+        screenshotWhole.save(os.path.join(path.detection,'whole.png'))
 
     """
     This section of the code checks for a blue, grey, or fight text box.
@@ -337,7 +56,8 @@ while True:
         backgroundColor = tbBlue_Check1_V.F
         redArrowColor = RedArrow_BlueTB
         croppedTextBox = screenshotWhole.crop((xy_TopLeft[0], xy_TopLeft[1], xy_BottomRight[0], xy_BottomRight[1]))
-        croppedTextBox.save("S:\\text\\Blue_Cropped.png")
+        if debug_SaveDetectionImages:
+            croppedTextBox.save(os.path.join(path.detection, "cropped.png"))
 
     detectedGrey, (xy_TopLeft, xy_BottomRight) = detectTextBox_1(screenshotWhole, tbGrey_Check1_V, tbGrey_Check2_H)
     if detectedGrey:
@@ -345,7 +65,8 @@ while True:
         backgroundColor = tbGrey_Check1_V.F
         redArrowColor = RedArrow_BlueTB
         croppedTextBox = screenshotWhole.crop((xy_TopLeft[0], xy_TopLeft[1], xy_BottomRight[0], xy_BottomRight[1]))
-        croppedTextBox.save("S:\\text\\Grey_Cropped.png")
+        if debug_SaveDetectionImages:
+            croppedTextBox.save(os.path.join(path.detection, "cropped.png"))
 
     detectedFight, (xy_TopLeft, xy_BottomRight) = detectTextBox_1(screenshotWhole, tbFight_Check1_V, tbFight_Check2_H)
     if detectedFight:
@@ -353,7 +74,8 @@ while True:
         backgroundColor = tbFight_Check1_V.F
         redArrowColor = RedArrow_FightTB
         croppedTextBox = screenshotWhole.crop((xy_TopLeft[0], xy_TopLeft[1], xy_BottomRight[0], xy_BottomRight[1]))
-        croppedTextBox.save("S:\\text\\Fight_Cropped.png")
+        if debug_SaveDetectionImages:
+            croppedTextBox.save(os.path.join(path.detection, "cropped.png"))
 
     if detectedBlue or detectedGrey:
         Line1_Start = EnumBlueBoxRowPercentage.Line1_Start
@@ -391,25 +113,29 @@ while True:
                 ))
             )
 
+        if debug_SaveDetectionImages:
+            tbLines[0].save(os.path.join(path.detection, "line0.png"))
+            tbLines[1].save(os.path.join(path.detection, "line1.png"))
+
         tbStripped = Image.new('RGBA', (width, tbLines[0].height + tbLines[1].height))
         tbStripped.paste(tbLines[0], (0,0))
         tbStripped.paste(tbLines[1], (0,tbLines[0].height))
         # print(f"Stripped image is \tw: {tbStripped.width}\th: {tbStripped.height}")
-        tbStripped.save("S:\\Text\\BeforeRedArrowRemoval.png")
+        if debug_SaveDetectionImages:
+            tbStripped.save(os.path.join(path.detection, "lines.png"))
 
         # Delete the stupid red arrow from each line
-        for im in tbLines:
+        for l, im in enumerate(tbLines):
 
             startingRow = int(im.height * RED_ARROW_CHECK_PERCENT)
-           
             redDetected, pixel_ColorChange = pixelScan(redArrowColor, getPixelRow(im, startingRow))
             
+            # if l == 0:
+            #     for i, p in enumerate(getPixelRow(im, startingRow)):
+            #         print(f"{p[0]}\t{p[1]}\t{p[2]}")
+
             if redDetected:
 
-                # print("Red Detected")
-
-                # print(pixel_ColorChange)
-                
                 startingColumn = pixel_ColorChange[1]
                 edgeFound = False # Initialize
 
@@ -479,8 +205,8 @@ while True:
         tbStripped = Image.new('RGBA', (width, tbLines[0].height + tbLines[1].height))
         tbStripped.paste(tbLines[0], (0,0))
         tbStripped.paste(tbLines[1], (0,tbLines[0].height))
-        print(f"Stripped image is \tw: {tbStripped.width}\th: {tbStripped.height}")
-        tbStripped.save("S:\\Text\\Stripped.png")
+        if debug_SaveDetectionImages:
+            tbStripped.save(os.path.join(path.detection, "lines_redArrowRemoved.png"))
 
         # Break stripped TB image into four parts
 
@@ -519,12 +245,16 @@ while True:
             tbSquare.paste(im, (0,y_offset))
             y_offset += im.size[1]
 
-        tbSquare.save("S:\\text\\Square.png")
+        if debug_SaveDetectionImages:
+            tbSquare.save(os.path.join(path.detection, "square.png"))
 
         # Process hash of square textbox image
-        new_hash = imagehash.dhash(tbSquare, HASH_SIZE_LEVEL_1)
+        new_hash = imagehash.dhash(tbSquare, HASH_SIZES[0])
+
+        if prev_hash is None:
+            prev_hash = new_hash
+
         diff = new_hash - prev_hash
-        print(str(new_hash)[0:10] + ", " + str(prev_hash)[0:10] + ", diff = " + str(diff))
         prev_hash = new_hash
 
         # Monitor when the text box is steady,
@@ -534,25 +264,53 @@ while True:
         else:
             hashDiffFlat_Count += 1
 
-        if hashDiffFlat_Count > FLATHASH_COUNTGOAL:
-            flatHash = 1
+        if hashDiffFlat_Count >= FLATHASH_COUNTGOAL:
+            flatHash = True
         else:
-            flatHash = 0 
+            flatHash = False
+
+        print(f"new: {str(new_hash)[0:10]}, prev:{str(prev_hash)[0:10]}, diff: {diff}, count: {hashDiffFlat_Count}, flat = {flatHash}")
 
         if flatHash:
-            index0 = 0
-            for x in hashList:
-                if (x == new_hash) and index0 != prev_playedHash:
-                    prev_playedHash = index0
-                    print(f'triggering audio for file {index0}')
-                    fileName = str(index0) + ".wav"
-                    print("FileName: " + fileName)
-                    path_fileName = os.path.join(path.audio,fileName)
-                    print("FilePath: " + path_fileName)
-                    if os.path.exists(path_fileName):
-                        winsound.PlaySound(path_fileName, winsound.SND_ASYNC | winsound.SND_ALIAS )
-                index0 += 1
 
-        else:
-            flatHash = 0
-            hashDiffFlat_Count = 0
+            hashMatchID = None
+
+            # First pass search
+            pass1_Matches = []
+            for i, x in enumerate(hashList):
+                if x.h[0] - new_hash <= HASH_TOLERANCES[0]:
+                    pass1_Matches.append(i)
+                
+            if len(pass1_Matches) == 1:
+                hashMatchID = pass1_Matches[0]
+            
+            else:
+
+                new_hash = imagehash.dhash(tbSquare, HASH_SIZES[1])
+                # Second pass search
+                pass2_Matches = []
+                for i in pass1_Matches:
+                    if hashList[i] - new_hash <= HASH_TOLERANCES[1]:
+                        pass2_Matches.append(i)
+                
+                if len(pass2_Matches) == 1:
+                    hashMatchID = pass2_Matches[0]
+            
+                else:
+
+                    new_hash = imagehash.dhash(tbSquare, HASH_SIZES[2])
+                    # Second pass search
+                    pass3_Matches = []
+                    for i in pass2_Matches:
+                        if hashList[i] - new_hash <= HASH_TOLERANCES[2]:
+                            pass3_Matches.append(i)
+                    
+                    if len(pass3_Matches) == 1:
+                        hashMatchID = pass3_Matches[0]
+
+            if hashMatchID is not None and hashMatchID != prev_playedHash_ID:
+                playAudio(hashMatchID)
+
+    else:
+        flatHash = 0
+        hashDiffFlat_Count = 0
