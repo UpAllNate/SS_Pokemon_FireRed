@@ -16,14 +16,15 @@ FLATHASH_THRESHOLD = 2
 UNIQUEHASH_THRESHOLD = 0
 FLATHASH_COUNTGOAL = 3
 
-HASH_SIZE = 32
+HASH_SIZE_LEVEL_1 = 18
+HASH_SIZE_LEVEL_2 = 36
 
 prev_playedHash = -1
 flatHash = 0
 hashDiffFlat_Count = 0
 # Initialize prev_hash with correctly sized value
 im = Image.new('RGBA', (500,500))
-prev_hash = imagehash.dhash(im, hash_size=HASH_SIZE)
+prev_hash = imagehash.dhash(im, hash_size=HASH_SIZE_LEVEL_2)
 
 """
 Get directory and file paths
@@ -281,12 +282,30 @@ class color_fightMenu:
     inner = (2166, 208, 216)
     fill = (248, 248, 248)
 
-
 """
 This function opens the file hashTable.csv
 and parses the hashes, saved as hex strings,
 back into imagehash objects.
+
+There are two levels of hash, 1 and 2.
+These are defined as constants at the top of the program,
+HASH_SIZE_LEVEL_1 and _2
+
+If there is a collision between the observed image and multiple
+LEVEL_1 hashtable instances, level 2 will be queried for a 
+higher quality comparison.
+
+Level 2 is not used imediately because they are significantly
+larger hashes and therefor slower to compare / compute.
 """
+
+class HashedImageInstance:
+    def __init__(self, text : str, h_1 : imagehash.ImageHash, h_2 : imagehash.ImageHash) -> None:
+        self.text = text
+        self.h_1 = h_1
+        self.h_2 = h_2
+        
+
 def pokeReadHashTable() -> list: 
     h = []
     # Open table
@@ -503,7 +522,7 @@ while True:
         tbSquare.save("S:\\text\\Square.png")
 
         # Process hash of square textbox image
-        new_hash = imagehash.dhash(tbSquare, HASH_SIZE)
+        new_hash = imagehash.dhash(tbSquare, HASH_SIZE_LEVEL_1)
         diff = new_hash - prev_hash
         print(str(new_hash)[0:10] + ", " + str(prev_hash)[0:10] + ", diff = " + str(diff))
         prev_hash = new_hash
