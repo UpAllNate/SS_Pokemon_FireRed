@@ -82,15 +82,15 @@ while True:
         Line1_End = EnumBlueBoxRowPercentage.Line1_End
         Line2_Start = EnumBlueBoxRowPercentage.Line2_Start
         Line2_End = EnumBlueBoxRowPercentage.Line2_End
-    
+
     if detectedFight:
         Line1_Start = EnumFightBoxRowPercentage.Line1_Start
         Line1_End = EnumFightBoxRowPercentage.Line1_End
         Line2_Start = EnumFightBoxRowPercentage.Line2_Start
         Line2_End = EnumFightBoxRowPercentage.Line2_End
-    
+
     if anyDetected:
-        
+
         width = croppedTextBox.width
         height = croppedTextBox.height
 
@@ -129,7 +129,7 @@ while True:
 
             startingRow = int(im.height * RED_ARROW_CHECK_PERCENT)
             redDetected, pixel_ColorChange = pixelScan(redArrowColor, getPixelRow(im, startingRow))
-            
+
             # if l == 0:
             #     for i, p in enumerate(getPixelRow(im, startingRow)):
             #         print(f"{p[0]}\t{p[1]}\t{p[2]}")
@@ -148,7 +148,7 @@ while True:
                     if nextRow < 0:
                         edgeFound = True
                         edge_Y = 0
-                
+
                     # If we hit background color, we found the edge on the last pixel
                     elif im.getpixel((startingColumn, nextRow)) == backgroundColor:
                         edgeFound = True
@@ -156,7 +156,7 @@ while True:
 
                     # Increment to look at the next pixel going upward
                     offset = offset + 1
-                
+
                 # Find the left edge of the red arrow
                 offset = 1
                 edgeFound = False
@@ -166,7 +166,7 @@ while True:
                     # If we get to the top edge of the image, that's the edge
                     if nextColumn < 0:
                         raise ValueError("Didn't find arrow left edge")
-                
+
                     # If we hit background color, we found the edge on the last pixel
                     elif im.getpixel((nextColumn, edge_Y)) == backgroundColor:
                         edgeFound = True
@@ -174,10 +174,10 @@ while True:
 
                     # Increment to look at the next pixel going upward
                     offset = offset + 1
- 
+
                 # print(f"top left coordinate is: ({edge_X},{edge_Y})")
                 # print(f"Detected pixel is color: {im.getpixel((edge_X, edge_Y))}")
-                
+
                 allComplete_X = False
                 currentX = edge_X
                 offset_X = 0
@@ -194,14 +194,14 @@ while True:
                             allComplete_Y = True
                         else:
                             im.putpixel((currentX, currentY), (backgroundColor[0], backgroundColor[1], backgroundColor[2], 255))
-                        
+
                         currentY = currentY + 1
 
                     currentX = currentX + 1
 
                     if im.getpixel((currentX,edge_Y)) == backgroundColor:
                         allComplete_X = True
-        
+
         tbStripped = Image.new('RGBA', (width, tbLines[0].height + tbLines[1].height))
         tbStripped.paste(tbLines[0], (0,0))
         tbStripped.paste(tbLines[1], (0,tbLines[0].height))
@@ -280,10 +280,10 @@ while True:
             for i, x in enumerate(hashList):
                 if x.h[0] - new_hash <= HASH_TOLERANCES[0]:
                     pass1_Matches.append(i)
-                
+
             if len(pass1_Matches) == 1:
                 hashMatchID = pass1_Matches[0]
-            
+
             else:
 
                 new_hash = imagehash.dhash(tbSquare, HASH_SIZES[1])
@@ -292,10 +292,10 @@ while True:
                 for i in pass1_Matches:
                     if hashList[i] - new_hash <= HASH_TOLERANCES[1]:
                         pass2_Matches.append(i)
-                
+
                 if len(pass2_Matches) == 1:
                     hashMatchID = pass2_Matches[0]
-            
+
                 else:
 
                     new_hash = imagehash.dhash(tbSquare, HASH_SIZES[2])
@@ -304,13 +304,19 @@ while True:
                     for i in pass2_Matches:
                         if hashList[i] - new_hash <= HASH_TOLERANCES[2]:
                             pass3_Matches.append(i)
-                    
+
                     if len(pass3_Matches) == 1:
                         hashMatchID = pass3_Matches[0]
 
             if hashMatchID is not None and hashMatchID != prev_playedHash_ID:
                 playAudio(hashMatchID)
 
+        else:
+            flatHash = 0
+            hashDiffFlat_Count = 0
+            hashMatchID = None
+
     else:
         flatHash = 0
         hashDiffFlat_Count = 0
+        hashMatchID = None
