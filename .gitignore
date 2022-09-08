@@ -3,6 +3,7 @@ __pycache__/
 *.py[cod]
 *$py.class
 common/__pycache__/
+common/AudioPacks/TestAudioPack/
 
 # C extensions
 *.so
