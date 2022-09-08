@@ -1,5 +1,7 @@
+
 from common.ssCoreImports import *
- 
+from common.ssHashFunctions import *
+
 """
 Get directory and file paths
 """
@@ -9,14 +11,14 @@ class path:
     dir = os.path.dirname(os.path.realpath(__file__))[:-7] # The -7 deletes '\common' from the string returned
     common = os.path.join(dir,'common')
     reference = os.path.join(common,'reference')
-    audio = os.path.join(common,'audio')
+    AudioPacks = os.path.join(common,'AudioPacks')
     screenshot = os.path.join(common, 'screenshot')
     detection = os.path.join(screenshot, 'detection')
-
     file_logConfig = os.path.join(common,'logging.conf')
     file_HashTable = os.path.join(common,'hashTable.csv')
+    selectedAudioPack = None
 
-# Verify that 
+# Verify that path is within \common\
 p = pathFunction(path.dir)
 if not p.is_dir:
     raise ImportError("Expected ssPath.py within ...\\common\\")
@@ -25,7 +27,7 @@ if not p.is_dir:
 dirs = []
 dirs.append(path.common)
 dirs.append(path.reference)
-dirs.append(path.audio)
+dirs.append(path.AudioPacks)
 
 for dir in dirs:
     p = pathFunction(dir)

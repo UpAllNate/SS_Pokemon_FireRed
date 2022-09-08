@@ -20,7 +20,121 @@ Set up logging. There are two logs:
 """
 logging.config.fileConfig(path.file_logConfig, disable_existing_loggers=False)
 
-hashList = pokeReadHashTable()
+
+"""
+Scan for all available audio packs and then
+prompt the user to select one, if there is
+more than one.
+"""
+# Scan the AudioPack directory for all installed packs
+allAudioPacks = [ f.path for f in os.scandir(path.AudioPacks) if f.is_dir()]
+
+class AudioPackData:
+    def __init__(self, title : str, authors : list[str] , hashPath, packDir) -> None:
+        self.title = title
+        self.authors = authors
+        self.audioPackDir = packDir
+        self.hashTablePath = hashPath
+    
+    def __str__(self):
+        msg = f"AudioPack :{self.title}, Authors:"
+        for i, a in enumerate(self.authors):
+            msg += f"{a}"
+            if i < len(self.authors) - 1:
+                msg += ", "
+        msg += "\n"
+        return msg
+
+allValidAudioPacks : AudioPackData = []
+
+# Compile only those directories with an Audio Pack Description file that contains a title and hash table
+for packDir in allAudioPacks:
+
+    print(f"AudioPack Directory: {packDir}")
+
+    # Audio Pack Description
+    file = pathFunction(os.path.join(packDir,'AudioPackDescription.csv'))
+
+    print(f"AudioPack Description file: {file}")
+
+    if not file.is_file():
+        print("Description does not exist")
+        break
+
+    names = []
+    with open(file, mode='r') as file_csv:
+        # Create csv reader object of hashtable csv
+        reader_obj = csv.reader(file_csv)
+
+        # Get title and names of authors
+        for i, row in enumerate(reader_obj):
+            if i == 0:
+                if not len(row) == 2:
+                    print("First row is not length two")
+                    break
+                if not row[0] == "Title":
+                    print("First row does not start with Title")
+                    break
+
+                title = row[1]
+            
+            if i == 1:
+                if not len(row) >= 2:
+                    print("Second row is not at least length two")
+                    break
+                if not row[0] == "Authors":
+                    print("Second row does not start with Authors")
+                    break
+
+                for j, n in enumerate(row):
+                    if j >= 1:
+                        names.append(n)
+                        print(f"Appended name: {n}")
+
+    file = os.path.join(packDir,'hashTable.csv')
+
+    if not pathFunction(file).is_file():
+        print("hashTable.csv is not a file")
+        break
+    if not checkHashTable(file):
+        print("hashTable.csv check failure")
+        break
+
+    allValidAudioPacks.append(AudioPackData(title, names, file, packDir))
+
+# for pack in allValidAudioPacks:
+#     print(pack)
+
+choosing = True
+
+while choosing:
+    os.system('cls' if os.name == 'nt' else 'clear')
+    selectionMenu = "Select from the following:\n \
+        \n"
+    
+    for i, p in enumerate(allValidAudioPacks):
+        selectionMenu += f"[{i}] : {str(p)}\n"
+
+    selectionMenu += "\nPlease enter the pack number: "
+
+    try:
+        selection = int(input(selectionMenu))
+    except:
+        os.system('cls' if os.name == 'nt' else 'clear')
+        print("That is not a number.")
+        time.sleep(2)
+        os.system('cls' if os.name == 'nt' else 'clear')
+    else:
+        if selection < 0 or selection >= len(allValidAudioPacks):
+            os.system('cls' if os.name == 'nt' else 'clear')
+            print("That is not a valid selection")
+            time.sleep(2)
+        else:
+            choosing = False
+
+path.selectedAudioPack = allValidAudioPacks[selection].audioPackDir
+
+hashList = pokeReadHashTable(allValidAudioPacks[selection].hashTablePath)
 
 def playAudio(hashID):
 
@@ -30,7 +144,7 @@ def playAudio(hashID):
     print(f'triggering audio for file {hashID}')
     fileName = str(hashID) + ".wav"
     print("FileName: " + fileName)
-    path_fileName = os.path.join(path.audio,fileName)
+    path_fileName = os.path.join(path.selectedAudioPack,fileName)
     print("FilePath: " + path_fileName)
     if os.path.exists(path_fileName):
         winsound.PlaySound(path_fileName, winsound.SND_ASYNC | winsound.SND_ALIAS )

@@ -26,10 +26,56 @@ class HashedImageInstance:
         self.text = text
         self.scr = scr
 
-def pokeReadHashTable() -> list: 
-    h = []
+def checkHashTable(filePath) -> bool: 
+
     # Open table
-    with open(path.file_HashTable, mode='r') as file_csv:
+    with open(filePath, mode='r') as file_csv:
+
+        # Create csv reader object of hashtable csv
+        reader_obj = csv.reader(file_csv)
+
+        c_List = {
+            "ID" : None,
+            "hStart" : None,
+            "hEnd" : None,
+            "Text" : None,
+            "Screenshot" : None
+        }
+
+
+        for j, c in enumerate(next(reader_obj)):
+
+            if c == "ID":
+                c_List["ID"] = j
+            if c == "hStart":
+                c_List["hStart"] = j
+            if c == "hEnd":
+                c_List["hEnd"] = j
+            if c == "Text":
+                c_List["Text"] = j
+            if c == "Screenshot":
+                c_List["Screenshot"] = j
+
+        if None in c_List.values():
+            return False
+            # raise ImportError("The hash table is missing the proper headers")
+        if c_List["hStart"] >= c_List["hEnd"]:
+            return False
+            # raise ValueError("hStart must precede hEnd")
+        if c_List["hEnd"] - c_List["hStart"] + 1 != len(HASH_SIZES):
+            return False
+            # raise ValueError("hashTable.csv has different number of hashes than ssEnum.py/HASH_SIZES")
+    
+    return True
+
+def pokeReadHashTable(filePath) -> list: 
+    h = []
+
+    if not checkHashTable(filePath):
+        return None
+
+    # Open table
+    with open(filePath, mode='r') as file_csv:
 
         # Create csv reader object of hashtable csv
         reader_obj = csv.reader(file_csv)
@@ -43,8 +89,7 @@ def pokeReadHashTable() -> list:
         }
 
         for i, row in enumerate(reader_obj):
-            
-            # Detect the header columns
+
             if i == 0:
                 for j, c in enumerate(row):
 
@@ -58,13 +103,6 @@ def pokeReadHashTable() -> list:
                         c_List["Text"] = j
                     if c == "Screenshot":
                         c_List["Screenshot"] = j
-
-                if None in c_List.values():
-                    raise ImportError("The hash table is missing the proper headers")
-                if c_List["hStart"] >= c_List["hEnd"]:
-                    raise ValueError("hStart must precede hEnd")
-                if c_List["hEnd"] - c_List["hStart"] + 1 != len(HASH_SIZES):
-                    raise ValueError("hashTable.csv has different number of hashes than ssEnum.py/HASH_SIZES")
 
             # For all rows containing hash definitions
             if i >= 1:
