@@ -310,10 +310,9 @@ while True:
 
             if hashMatchID is not None and hashMatchID != prev_playedHash_ID:
                 playAudio(hashMatchID)
+                prev_playedHash_ID = hashMatchID
 
         else:
-            flatHash = 0
-            hashDiffFlat_Count = 0
             hashMatchID = None
 
     else:
