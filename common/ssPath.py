@@ -14,8 +14,13 @@ class path:
     AudioPacks = os.path.join(common,'AudioPacks')
     screenshot = os.path.join(common, 'screenshot')
     detection = os.path.join(screenshot, 'detection')
+    logShots = os.path.join(screenshot,'logShots')
+
+    # Files
     file_logConfig = os.path.join(common,'logging.conf')
     file_HashTable = os.path.join(common,'hashTable.csv')
+    
+    # Built on script startup
     selectedAudioPack = None
 
 # Verify that path is within \common\
@@ -28,6 +33,9 @@ dirs = []
 dirs.append(path.common)
 dirs.append(path.reference)
 dirs.append(path.AudioPacks)
+dirs.append(path.screenshot)
+dirs.append(path.detection)
+dirs.append(path.logShots)
 
 for dir in dirs:
     p = pathFunction(dir)
@@ -36,8 +44,7 @@ for dir in dirs:
 
 # Validate all required files are present
 files = []
-files.append(path.file_logConfig)
-files.append(path.file_HashTable)
+# files.append(path.file_logConfig)
 
 for file in files:
     p = pathFunction(file)

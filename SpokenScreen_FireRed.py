@@ -1,5 +1,13 @@
 from common.ssCoreImports import * # Must import first
 from common.ssPath import * # Must import second
+
+"""
+Set up logging. There are two logs:
+    The stream printed directly to console
+    The detailed info printed to a rotating log file in common/logging.conf
+"""
+logging.config.fileConfig(path.file_logConfig, disable_existing_loggers=False)
+
 from common.ssEnums import *
 from common.ssColorSets import *
 from common.ssImageFunctions import *
@@ -12,14 +20,6 @@ hashDiffFlat_Count = 0
 prev_hash = None
 
 debug_SaveDetectionImages = False
-
-"""
-Set up logging. There are two logs:
-    The stream printed directly to console
-    The detailed info printed to a rotating log file in common/logging.conf
-"""
-logging.config.fileConfig(path.file_logConfig, disable_existing_loggers=False)
-
 
 """
 Scan for all available audio packs and then
@@ -395,10 +395,7 @@ while True:
                 if x.h[0] - new_hash <= HASH_TOLERANCES[0]:
                     pass1_Matches.append(i)
 
-            if len(pass1_Matches) == 1:
-                hashMatchID = pass1_Matches[0]
-
-            else:
+            if pass1_Matches:
 
                 new_hash = imagehash.dhash(tbSquare, HASH_SIZES[1])
                 # Second pass search
@@ -407,10 +404,8 @@ while True:
                     if hashList[i] - new_hash <= HASH_TOLERANCES[1]:
                         pass2_Matches.append(i)
 
-                if len(pass2_Matches) == 1:
+                if pass2_Matches:
                     hashMatchID = pass2_Matches[0]
-
-                else:
 
                     new_hash = imagehash.dhash(tbSquare, HASH_SIZES[2])
                     # Second pass search
@@ -421,6 +416,13 @@ while True:
 
                     if len(pass3_Matches) == 1:
                         hashMatchID = pass3_Matches[0]
+
+                    elif len(pass3_Matches) > 1:
+                        dt = datetime.now().strftime("%Y_%m_%d_%H_%M_%S")
+                        logging.error(f"Hash collision on image at {dt}")
+                        dtImageFileName = dt + '_hashCollision.png'
+                        dtImageFilePath = os.path.join(path.logShots,dtImageFileName)
+                        tbSquare.save(dtImageFilePath)
 
             if hashMatchID is not None and hashMatchID != prev_playedHash_ID:
                 playAudio(hashMatchID)
