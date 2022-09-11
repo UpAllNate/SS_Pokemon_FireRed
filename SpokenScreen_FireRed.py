@@ -401,7 +401,7 @@ while True:
                 # Second pass search
                 pass2_Matches = []
                 for i in pass1_Matches:
-                    if hashList[i] - new_hash <= HASH_TOLERANCES[1]:
+                    if hashList[i].h[1] - new_hash <= HASH_TOLERANCES[1]:
                         pass2_Matches.append(i)
 
                 if pass2_Matches:
@@ -411,7 +411,7 @@ while True:
                     # Second pass search
                     pass3_Matches = []
                     for i in pass2_Matches:
-                        if hashList[i] - new_hash <= HASH_TOLERANCES[2]:
+                        if hashList[i].h[2] - new_hash <= HASH_TOLERANCES[2]:
                             pass3_Matches.append(i)
 
                     if len(pass3_Matches) == 1:
