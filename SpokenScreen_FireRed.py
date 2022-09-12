@@ -386,7 +386,6 @@ while True:
         print(f"new: {str(new_hash)[0:10]}, prev:{str(prev_hash)[0:10]}, diff: {diff}, count: {hashDiffFlat_Count}, flat = {flatHash}")
 
         if flatHash:
-
             hashMatchID = None
 
             # First pass search
@@ -396,7 +395,6 @@ while True:
                     pass1_Matches.append(i)
 
             if pass1_Matches:
-
                 new_hash = imagehash.dhash(tbSquare, HASH_SIZES[1])
                 # Second pass search
                 pass2_Matches = []
@@ -405,8 +403,6 @@ while True:
                         pass2_Matches.append(i)
 
                 if pass2_Matches:
-                    hashMatchID = pass2_Matches[0]
-
                     new_hash = imagehash.dhash(tbSquare, HASH_SIZES[2])
                     # Second pass search
                     pass3_Matches = []
