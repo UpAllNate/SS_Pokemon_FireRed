@@ -1,0 +1,14 @@
+{
+  "name": "SS_Pokemon_FireRed",
+  "packageManager": "yarn@3.2.3",
+  "dependencies": {
+    "express": "^4.18.1",
+    "knex": "^2.3.0",
+    "pg": "^8.8.0"
+  },
+  "devDependencies": {
+    "@types/knex": "^0.16.1",
+    "ts-node": "^10.9.1",
+    "typescript": "^4.8.3"
+  }
+}

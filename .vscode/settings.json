@@ -1,0 +1,48 @@
+{
+  "workbench.colorCustomizations": {
+    "activityBar.activeBackground": "#d04649",
+    "activityBar.background": "#d04649",
+    "activityBar.foreground": "#e7e7e7",
+    "activityBar.inactiveForeground": "#e7e7e799",
+    "activityBarBadge.background": "#37cb34",
+    "activityBarBadge.foreground": "#15202b",
+    "commandCenter.border": "#e7e7e799",
+    "sash.hoverBorder": "#d04649",
+    "statusBar.background": "#b52e31",
+    "statusBar.border": "#b52e31",
+    "statusBar.foreground": "#e7e7e7",
+    "statusBarItem.hoverBackground": "#d04649",
+    "statusBarItem.remoteBackground": "#b52e31",
+    "statusBarItem.remoteForeground": "#e7e7e7",
+    "tab.activeBorder": "#d04649",
+    "titleBar.activeBackground": "#b52e31",
+    "titleBar.activeForeground": "#e7e7e7",
+    "titleBar.border": "#b52e31",
+    "titleBar.inactiveBackground": "#b52e3199",
+    "titleBar.inactiveForeground": "#e7e7e799"
+  },
+  "peacock.color": "#b52e31",
+  "search.exclude": {
+    "**/.yarn": true,
+    "**/.pnp.*": true
+  },
+  "typescript.tsdk": ".yarn/sdks/typescript/lib",
+  "typescript.enablePromptUseWorkspaceTsdk": true,
+  "sqltools.connections": [
+    {
+      "pgOptions": {
+        "ssl": {
+          "rejectUnauthorized": false
+        }
+      },
+      "previewLimit": 50,
+      "server": "ec2-52-207-90-231.compute-1.amazonaws.com",
+      "port": 5432,
+      "askForPassword": true,
+      "driver": "PostgreSQL",
+      "name": "herokupls",
+      "database": "dcps4e32kl8qkb",
+      "username": "xkxwhrzkpjwhkq"
+    }
+  ]
+}
